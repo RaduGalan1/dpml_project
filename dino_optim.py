@@ -1,3 +1,7 @@
+import numpy as np
+import networkx as nx
+import matplotlib.pyplot as plt
+import time
 
 #
 # def permute(a, l, r):
@@ -78,10 +82,36 @@ class DinoSolver():
         print("We got solutions: ", len(solutions))
 
 
-import time
+
+
+    def print_graph(self):
+        G = nx.Graph()
+        # Add nodes
+        for node in self.dino_variables.keys():
+            G.add_node(node)
+        for node in self.country_domain_objects.keys():
+            G.add_node(node)
+
+        G.add_edge("me","ch")
+        G.add_edge("nu","ch")
+        G.add_edge("me","ar")
+        G.add_edge("me","en")
+        G.add_edge("eu","ca")
+        G.add_edge("eu","us")
+        G.add_edge("ha","us")
+        G.add_edge("ha","ar")
+        G.add_edge("he","ca")
+        G.add_edge("he","us")
+        G.add_edge("he","en")
+        nx.draw(G, with_labels=True)
+        plt.savefig('labels.png')
+
+
 def main():
     time.sleep(2)
     solver = DinoSolver()
-    solver.run_simple_backtrack()
+    # solver.run_simple_backtrack()
+
+    solver.print_graph()
 
 main()

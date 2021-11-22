@@ -1,5 +1,7 @@
 from copy import deepcopy
-
+import numpy as np
+import networkx as nx
+import matplotlib.pyplot as plt
 
 class DinoSolver():
     def __init__(self):
@@ -94,27 +96,9 @@ class DinoSolver():
         for i in range(no):
             for v in var:
                 self.variables[v+str(i)] = None
+        print(self.variables)
         self.results = []
 
-        # self.variables2 = {}
-        # self.variables2['dino0']= 'me'
-        # self.variables2['dino1']= 'eu'
-        # self.variables2['dino2']= 'nu'
-        # self.variables2['dino3']= 'he'
-        # self.variables2['dino4']= 'ha'
-        #
-        # self.variables2['vegan0']= 'n'
-        # self.variables2['vegan1']= 'y'
-        # self.variables2['vegan2']= 'y'
-        # self.variables2['vegan3']= 'y'
-        # self.variables2['vegan4']= 'y'
-        #
-        # self.variables2['size0']= '4'
-        # self.variables2['size1']= '3'
-        # self.variables2['size2']= '5'
-        # self.variables2['size3']= '1'
-        # self.variables2['size4']= '2'
-        # print(self.constraints())
         self.total_counter = 0
         self.permutation()
 
@@ -131,10 +115,31 @@ class DinoSolver():
                 res.append(list(self.countries.keys())[i] + "-" + el[i])
             print(res)
 
+    def print_graph(self):
+        G = nx.Graph()
+        # Add nodes
+        for node in self.variables.keys():
+            G.add_node(node)
+
+        for el in range(5):
+            G.add_edge("size"+str(el),"5")
+            G.add_edge('dino' + str(el),'1')
+        for el in range(5):
+
+            for el2 in range(5):
+                G.add_edge("dino" + str(el), "vegan" + str(el2))
+                G.add_edge("dino" + str(el), "dino" + str(el2))
+                G.add_edge('dino' + str(el),'size' + str(el2))
+
+
+        nx.draw(G, with_labels=True)
+        plt.savefig('labels2.png')
+
+
 import time
 def main():
     time.sleep(2)
     solver = DinoSolver()
     solver.run_full_backtrack()
-
+    solver.print_graph()
 main()
