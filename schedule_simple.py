@@ -31,12 +31,63 @@ class ScheduleSolver():
             self.D[var[:-1]].append(d)
 
     def constraints(self):
+        self.total_counter += 1
         order =[]
+        order_time =[]
         for i in range(self.no):
             order.append(self.variables["subject" + str(i)])
 
-        if 'ch' in order and order.index('ch') % 2 == 0:
+        for i in range(len(order_time)):
+            for j in range(len(order_time)):
+                try:
+                    i_time = int(self.variables["time" + str(i)])
+                    j_time = int(self.variables["time" + str(j)])
+
+                    print(i_time, "-", j_time)
+                    if abs(int(i_time) - int(j_time)) == 1:
+                        if order[i] in ['ch', 'ma'] and order[j] in ['hi','ph']:
+                            return False
+                except:
+                    pass
+
+        try:
+            if int(self.variables["time" + str(order.index('ch'))]) % 2 == 1:
+                return False
+        except:
+            pass
+        try:
+            if int(self.variables["time" + str(order.index('hi'))]) in [2, 4]:
+                return False
+        except:
+            pass
+        try:
+            if int(self.variables["time" + str(order.index('ph'))]) in [5, 7]:
+                return False
+        except:
+            pass
+
+        # work mornings or abends
+        counter = 0
+        length = 0
+        for i in range(self.no):
+            try:
+                if int(self.variables["time" + str(i)]) < 5:
+                    counter -= 1
+                else:
+                    counter += 1
+                length += 1
+            except:
+                pass
+        if counter not in [-length, length]:
             return False
+
+        # don t works first hours
+        for i in range(self.no):
+            try:
+                if int(self.variables["time" + str(i)]) == 1:
+                    return False
+            except:
+                pass
 
         return True
 
