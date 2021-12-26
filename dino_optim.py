@@ -50,6 +50,9 @@ class DinoSolver():
         if not(perm[self.dinos.index('me')] == 'ch' or perm[self.dinos.index('nu')] == 'ch'):
             is_correct = False
 
+        if not(perm[self.dinos.index('me')] == 'ch' or perm[self.dinos.index('nu')] == 'ch'):
+            is_correct = False
+
         if not (perm[self.dinos.index('me')] == 'ar' or perm[self.dinos.index('me')] == 'en'):
             is_correct = False
 
@@ -109,8 +112,9 @@ class DinoSolver():
 
 def main():
     time.sleep(2)
+    print("Solving with stochastic backtrack")
     solver = DinoSolver()
-    # solver.run_simple_backtrack()
+    solver.run_simple_backtrack()
 
     solver.print_graph()
 

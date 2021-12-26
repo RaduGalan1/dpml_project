@@ -13,17 +13,13 @@ import time
 #             permute(a, l + 1, r)
 #             a[l], a[i] = a[i], a[l]  # backtrack
 
-class DinoSolver():
+class ScheduleSolver():
     def __init__(self):
-        self.dino_variables = {"eu": "Eucentrosaurus", "ha": "Hadrosaurus", "he": "Herrerasaurus", "me": "Megasaurus",
-                          "nu": "Nuoerosaurus"}  # Z
-        self.country_domain_objects = {"ar": "Argentina", "ca": "Canada", "ch": "China", "en": "England",
-                                  "us": "USA"}  # D-all
+        self.subject_domain_variables = {"ma": "Math", "ch": "Chemistry", "ph": "philosophy", "hi": "History"}  # D-all
+        self.time_domain_variables = { "1": "1", "2": "2", "3": "3","4": "4", "5": "5", "6": "6", "7": "7","8": "8",}  # D-all
         self.constraints = {}
         self.total_counter = 0
 
-        self.dinos = ['eu', 'ha', 'he', 'me', 'nu']  # Solution
-        print("Dinos:", self.dinos)
 
     def permutation(self, lst,place):
 
@@ -47,34 +43,72 @@ class DinoSolver():
     def check_constraints(self,perm):
         is_correct = True
         self.total_counter += 1
-        if not(perm[self.dinos.index('me')] == 'ch' or perm[self.dinos.index('nu')] == 'ch'):
-            is_correct = False
+        # [['8', 'hi'], ['7', 'ph'], ['6', 'ch']]
+        for el in perm:
+            if el[1] == 'ch':
+                if int(el[0]) % 2 == 0:
+                    is_correct = False
+            if el[1] == 'hi':
+                if int(el[0]) not in [2,4]:
+                    is_correct = False
+            if el[1] == 'ph':
+                if int(el[0]) not in [5,7]:
+                    is_correct = False
 
-        if not (perm[self.dinos.index('me')] == 'ar' or perm[self.dinos.index('me')] == 'en'):
-            is_correct = False
+        for i in range(1,len(perm)):
+            if abs(int(perm[i][0]) - int(perm[i-1][0])) == 1:
+                if perm[i][1] in ['ch', 'ma'] and perm[i-1][1] in ['hi','ph']:
+                    return False
+                if perm[i-1][1] in ['ch', 'ma'] and perm[i][1] in ['hi','ph']:
+                    return False
+        if int(perm[0][0]) == 1:
+            return False
 
-        if not (perm[self.dinos.index('eu')] == 'us' or perm[self.dinos.index('eu')] == 'ca'):
-            is_correct = False
-
-        if not (perm[self.dinos.index('ha')] == 'ar' or perm[self.dinos.index('ha')] == 'us'):
-            is_correct = False
-
-        if perm[self.dinos.index('he')] == 'ca' or perm[self.dinos.index('he')] == 'us' or perm[self.dinos.index('he')] == 'en':
-            is_correct = False
+        sum = 0
+        for el in perm:
+            if int(el[0]) > 4:
+                sum += 1
+            else:
+                sum -= 1
+        if sum not in [-3,3]:
+            return False
 
         return is_correct
 
     def run_simple_backtrack(self):
 
-        a = list(self.country_domain_objects.keys())
-        results = self.permutation(a,0)
+        a = list(self.subject_domain_variables.keys())
+        b = list(self.time_domain_variables.keys())
+        a_combos = self.permutation(a,0)
+        a_combos = [x[:3] for x in a_combos]
+        a_final = []
+        for el in a_combos:
+            if el not in a_final:
+                a_final.append(el)
+        # print(len(a_final))
+
+        b_combos = self.permutation(b,0)
+        b_combos = [x[:3] for x in b_combos]
+        b_final = []
+        for el in b_combos:
+            if el not in b_final:
+                b_final.append(el)
+        # print(len(b_final))
+
+        results = []
+        for el1 in b_final:
+            for el2 in a_final:
+                choice = [[el1[i],el2[i]] for i in range(3)]
+                choice.sort(key=lambda x: int(x[0]), reverse=False)
+                if choice not in results:
+                    results.append(choice)
+
+        # print(results)
+
 
         solutions = []
         for p in results:
             if self.check_constraints(p):
-                for i in range(len(p)):
-                    p[i]+="-"+self.dinos[i]
-
                 print("_" * 6, p)
                 solutions.append(p)
         print("We got total steps: ", self.total_counter)
@@ -84,34 +118,10 @@ class DinoSolver():
 
 
 
-    def print_graph(self):
-        G = nx.Graph()
-        # Add nodes
-        for node in self.dino_variables.keys():
-            G.add_node(node)
-        for node in self.country_domain_objects.keys():
-            G.add_node(node)
-
-        G.add_edge("me","ch")
-        G.add_edge("nu","ch")
-        G.add_edge("me","ar")
-        G.add_edge("me","en")
-        G.add_edge("eu","ca")
-        G.add_edge("eu","us")
-        G.add_edge("ha","us")
-        G.add_edge("ha","ar")
-        G.add_edge("he","ca")
-        G.add_edge("he","us")
-        G.add_edge("he","en")
-        nx.draw(G, with_labels=True)
-        plt.savefig('labels.png')
-
 
 def main():
     time.sleep(2)
-    solver = DinoSolver()
-    # solver.run_simple_backtrack()
-
-    solver.print_graph()
+    solver = ScheduleSolver()
+    solver.run_simple_backtrack()
 
 main()

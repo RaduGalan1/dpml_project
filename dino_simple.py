@@ -21,62 +21,221 @@ class DinoSolver():
             #     print("EQUAL")
             return
         var = self.find_unused_var()
-        for d_orig in self.D[var[:-1]]:
+        for d_orig in self.D[var]:
             d = deepcopy(d_orig)
             self.variables[var] = d
             if var[:-1] != 'vegan':
-                self.D[var[:-1]].remove(d_orig)
-            if self.constraints():
+                self.D[var].remove(d_orig)
+            # print(self.variables)
+            # print(self.D)
+            # print("____")
+            if self.constraints() and self.nu_constraints():
                 self.permutation()
             self.variables[var] = None
-            if var[:-1] != 'vegan':
-                self.D[var[:-1]].append(d)
 
-    def constraints(self):
+            if var[:-1] != 'vegan':
+                self.D[var].append(d)
+
+    def permutation_nc(self):
+        if None not in self.variables.values():
+            # print(self.variables)
+            self.results.append(deepcopy(self.variables))
+
+            # if str(self.variables2) == str(self.variables):
+            #     print("EQUAL")
+            return
+        add_back = []
+        var = self.find_unused_var()
+
+
+        for value in self.D[var]:
+
+            self.variables[var] = value
+
+            order = []
+            order_size = []
+            order_vegan = []
+            for i in range(self.no):
+                order.append(self.variables["dino" + str(i)])
+                order_size.append(self.variables["size" + str(i)])
+                order_vegan.append(self.variables["vegan" + str(i)])
+            if (self.constraints(order, order_size,order_vegan) and self.nu_constraints(order, order_size,order_vegan)) is False:
+                add_back.append(value)
+                self.D[var].remove(value)
+
+        self.variables[var] = None
+
+
+        for d_orig in self.D[var]:
+            d = deepcopy(d_orig)
+            self.variables[var] = d
+            if var[:-1] != 'vegan':
+                self.D[var].remove(d_orig)
+            if self.constraints() and self.nu_constraints():
+                self.permutation_nc()
+            self.variables[var] = None
+            if var[:-1] != 'vegan':
+                self.D[var].append(d)
+
+        for el in add_back:
+            self.D[var].append(el)
+
+
+    def permutation_ac(self):
+
+        if None not in self.variables.values():
+            # print(self.variables)
+            self.results.append(deepcopy(self.variables))
+
+            # if str(self.variables2) == str(self.variables):
+            #     print("EQUAL")
+            return
+        var = self.find_unused_var()
+        for d_orig in self.D[var]:
+            d = deepcopy(d_orig)
+            self.variables[var] = d
+            if var[:-1] != 'vegan':
+                self.D[var].remove(d_orig)
+            # print(self.variables)
+            # print(self.D)
+            # print("____")
+            if self.constraints() and self.nu_constraints():
+                self.permutation()
+            self.variables[var] = None
+
+            if var[:-1] != 'vegan':
+                self.D[var].append(d)
+
+    def nu_constraints(self,order = None, order_size = None, order_vegan = None):
+        if order is None and order_size is None and order_vegan is None:
+            order =[]
+            order_size = []
+            order_vegan = []
+            for i in range(self.no):
+                if self.variables["dino" + str(i)] is not None and self.variables["dino" + str(i)] in order:
+                    return False
+                if self.variables["size" + str(i)] is not None and self.variables["size" + str(i)] in order_size:
+                    return False
+                order.append(self.variables["dino" + str(i)])
+                order_size.append(self.variables["size" + str(i)])
+        else:
+            order_check = []
+            order_size_check = []
+            for i in range(self.no):
+                if self.variables["dino" + str(i)] is not None and self.variables["dino" + str(i)] in order_check:
+                    return False
+                if self.variables["size" + str(i)] is not None and self.variables["size" + str(i)] in order_size_check:
+                    return False
+                order_check.append(self.variables["dino" + str(i)])
+                order_size_check.append(self.variables["size" + str(i)])
+        return True
+
+
+
+    def constraints(self,order = None, order_size = None, order_vegan = None):
+        if order is None and order_size is None and order_vegan is None:
+            order = []
+            order_size = []
+            order_vegan = []
+            for i in range(self.no):
+                order.append(self.variables["dino" + str(i)])
+                order_size.append(self.variables["size" + str(i)])
+                order_vegan.append(self.variables["vegan" + str(i)])
+
         self.total_counter += 1
-        if not( self.variables['size' + self.countries['ch']] in ['5', None] ):
+        if not( order_size[ int( self.countries['ch'])] in ['5', None] ):
             return False
 
         for el in range(5):
-            if self.variables['dino' + str(el)] == 'he':
-                if not(self.variables['size' + str(el)] in ['1', None]):
+            if order[ el] == 'he':
+                if not(order_size[ int(el)] in ['1', None]):
                     return False
 
         me_no = ''
         ha_no = ''
         eu_no = ''
         for el in range(5):
-            if self.variables['dino' + str(el)] == 'me':
+            if order[ el] == 'me':
                 me_no = str(el)
-            elif self.variables['dino' + str(el)] == 'ha':
+            elif order[ el] == 'ha':
                 ha_no = str(el)
-            elif self.variables['dino' + str(el)] == 'eu':
+            elif order[ el] == 'eu':
                 eu_no = str(el)
-        if me_no != '' and ha_no != '' and eu_no != '' and self.variables['size' + me_no] is not None and self.variables['size' + eu_no] is not None and self.variables['size' + ha_no] is not None:
-            if int(self.variables['size' + me_no]) < int(self.variables['size' + ha_no]):
+        if me_no != '' and ha_no != '' and eu_no != '' and order_size[ int(me_no)] is not None and order_size[ int(eu_no)] is not None and order_size[ int(ha_no)] is not None:
+            if int(order_size[int(me_no)]) < int(order_size[ int(ha_no)]) :
                 return False
-            if int(self.variables['size' + me_no]) < int(self.variables['size' + eu_no]):
+            if int(order_size[ int(me_no)]) < int(order_size[ int(eu_no)]):
                 return False
 
 
-        if not( self.variables['vegan' + self.countries['ch']] in ['y', None]) or not(self.variables['vegan' + self.countries['us']] in ['y', None])  or not(self.variables['vegan' + self.countries['ca']] in ['y', None] ):
+        if not( order_vegan[int(self.countries['ch'])] in ['y', None]) or not(order_vegan[ int(self.countries['us'])] in ['y', None])  or not(order_vegan[ int(self.countries['ca'])] in ['y', None] ):
             return False
 
-        if me_no != '' and self.variables['vegan' + me_no] in ['y']:
+        if me_no != '' and order_vegan[int(me_no)] in ['y']:
             return False
 
-        if not( self.variables['dino' + self.countries['ca']] in ['eu', None] or self.variables['dino' + self.countries['us']] in ['eu', None] ):
+        if not( order[ int(self.countries['ca'])] in ['eu', None] or order[ int(self.countries['us'])] in ['eu', None] ):
             return False
 
-        if not( self.variables['dino' + self.countries['ar']] in ['ha', None] or self.variables['dino' + self.countries['us']] in ['ha', None] ):
+        if not( order[ int(self.countries['ar'])] in ['ha', None] or order[ int(self.countries['us'])] in ['ha', None] ):
             return False
         #
 
 
-        # if self.variables['dino' + self.countries['ch']] in ['he', None] or self.variables['dino' + self.countries['ca']] in ['he', None] or self.variables['dino' + self.countries['ch']] in ['he', None]:
+        # if order[ int(self.countries['ch'])] in ['he', None] or order[ int(self.countries['ca'])] in ['he', None] or order[ int(self.countries['ch'])] in ['he', None]:
         #     return False
 
-        if self.variables['dino' + self.countries['en']] in ['he'] or self.variables['dino' + self.countries['ca']] in ['he'] or self.variables['dino' + self.countries['us']] in ['he']:
+        if order[ int(self.countries['en'])] in ['he'] or order[ int(self.countries['ca'])] in ['he'] or order[ int(self.countries['us'])] in ['he']:
+            # if self.variables['dino0']=='he':
+            #     pass
+            return False
+
+        return True
+
+
+    def constraints_ac(self,order = None, order_size = None, order_vegan = None):
+        if order is None and order_size is None and order_vegan is None:
+            order = []
+            order_size = []
+            order_vegan = []
+            for i in range(self.no):
+                order.append(self.variables["dino" + str(i)])
+                order_size.append(self.variables["size" + str(i)])
+                order_vegan.append(self.variables["vegan" + str(i)])
+
+        self.total_counter += 1
+        if not( order_size[ int( self.countries['ch'])] in ['5', None] ):
+            return False
+
+        me_no = ''
+        ha_no = ''
+        eu_no = ''
+        for el in range(5):
+            if order[ el] == 'me':
+                me_no = str(el)
+            elif order[ el] == 'ha':
+                ha_no = str(el)
+            elif order[ el] == 'eu':
+                eu_no = str(el)
+        if me_no != '' and ha_no != '' and eu_no != '' and order_size[ int(me_no)] is not None and order_size[ int(eu_no)] is not None and order_size[ int(ha_no)] is not None:
+            if int(order_size[int(me_no)]) < int(order_size[ int(ha_no)]) :
+                return False
+            if int(order_size[ int(me_no)]) < int(order_size[ int(eu_no)]) :
+                return False
+
+
+        if not( order_vegan[int(self.countries['ch'])] in ['y', None]) or not(order_vegan[ int(self.countries['us'])] in ['y', None])  or not(order_vegan[ int(self.countries['ca'])] in ['y', None] ):
+            return False
+
+        if me_no != '' and order_vegan[int(me_no)] in ['y']:
+            return False
+
+        if order[ int(self.countries['ca'])] in ['ha'] or order[ int(self.countries['ch'])] in ['ha'] or order[ int(self.countries['en'])] in ['ha']:
+            return False
+
+
+
+        if order[ int(self.countries['en'])] in ['he'] or order[ int(self.countries['ca'])] in ['he'] or order[ int(self.countries['us'])] in ['he']:
             # if self.variables['dino0']=='he':
             #     pass
             return False
@@ -85,22 +244,137 @@ class DinoSolver():
 
     def run_full_backtrack(self):
 
-        self.D = {'dino':['eu', 'ha', 'he', 'me', 'nu'], 'size':['1','2','3','4','5'],'vegan':['n','y']}
+        self.D = {'dino0':['eu', 'ha', 'he', 'me', 'nu'], 'size0':['1','2','3','4','5'],'vegan0':['n','y'],
+                'dino1':['eu', 'ha', 'he', 'me', 'nu'], 'size1':['1','2','3','4','5'],'vegan1':['n','y'],
+                'dino2':['eu', 'ha', 'he', 'me', 'nu'], 'size2':['1','2','3','4','5'],'vegan2':['n','y'],
+                'dino3':['eu', 'ha', 'he', 'me', 'nu'], 'size3':['1','2','3','4','5'],'vegan3':['n','y'],
+                'dino4':['eu', 'ha', 'he', 'me', 'nu'], 'size4':['1','2','3','4','5'],'vegan4':['n','y'],
+                  }
         var = ['dino','size','vegan']
         self.countries = {'ar': '0', 'ca': '1', 'ch': '2', 'en': '3',
                           'us': '4'}
 
 
-        no = 5
+        self.no = 5
         self.variables = {}
-        for i in range(no):
+        for i in range(self.no):
             for v in var:
                 self.variables[v+str(i)] = None
-        print(self.variables)
         self.results = []
 
         self.total_counter = 0
         self.permutation()
+
+        unique_solutions = []
+        for el in self.results:
+            adable = tuple([el['dino0'],el['dino1'],el['dino2'],el['dino3'],el['dino4']])
+            unique_solutions.append(adable)
+        print("We got steps: ", self.total_counter)
+        print("We got solutions: ", len(self.results))
+        print("We got uniques: ", len(set(unique_solutions)))
+        for el in set(unique_solutions):
+            res = []
+            for i in range(len(el)):
+                res.append(list(self.countries.keys())[i] + "-" + el[i])
+            print(res)
+
+    def run_nc_backtrack(self):
+
+
+        self.D = {'dino0':['eu', 'ha', 'he', 'me', 'nu'], 'size0':['1','2','3','4','5'],'vegan0':['n','y'],
+                'dino1':['eu', 'ha', 'he', 'me', 'nu'], 'size1':['1','2','3','4','5'],'vegan1':['n','y'],
+                'dino2':['eu', 'ha', 'he', 'me', 'nu'], 'size2':['1','2','3','4','5'],'vegan2':['n','y'],
+                'dino3':['eu', 'ha', 'he', 'me', 'nu'], 'size3':['1','2','3','4','5'],'vegan3':['n','y'],
+                'dino4':['eu', 'ha', 'he', 'me', 'nu'], 'size4':['1','2','3','4','5'],'vegan4':['n','y'],
+                  }
+        self.countries = {'ar': '0', 'ca': '1', 'ch': '2', 'en': '3',
+                          'us': '4'}
+
+
+        self.no = 5
+        self.variables = {}
+        for i in self.D.keys():
+            self.variables[i] = None
+        print(self.variables )
+        self.results = []
+
+        self.total_counter = 0
+        self.permutation_nc()
+
+        unique_solutions = []
+        for el in self.results:
+            adable = tuple([el['dino0'],el['dino1'],el['dino2'],el['dino3'],el['dino4']])
+            unique_solutions.append(adable)
+        print("We got steps: ", self.total_counter)
+        print("We got solutions: ", len(self.results))
+        print("We got uniques: ", len(set(unique_solutions)))
+        for el in set(unique_solutions):
+            res = []
+            for i in range(len(el)):
+                res.append(list(self.countries.keys())[i] + "-" + el[i])
+            print(res)
+
+    def ac3(self):
+
+        for a in self.D.keys():
+            if a[:-1] != 'vegan':
+                for var_a in self.D[a]:
+                    to_delete = True
+
+                    for b in self.D.keys():
+                        if a != b and b[:-1] != 'vegan':
+                            for var_b in self.D[b]:
+                                self.variables[a] = var_a
+                                self.variables[b] = var_b
+
+                                order = []
+                                order_size = []
+                                order_vegan = []
+                                for i in range(self.no):
+                                    order.append(self.variables["dino" + str(i)])
+                                    order_size.append(self.variables["size" + str(i)])
+                                    order_vegan.append(self.variables["vegan" + str(i)])
+
+                                if self.constraints_ac(order, order_size, order_vegan) is True:
+                                    to_delete = False
+
+                                self.variables[a] = None
+                                self.variables[b] = None
+                    if to_delete:
+                        self.D[a].remove(var_a)
+                        print("Fake: ", var_a, "_",a)
+
+    def run_ac_backtrack(self):
+
+
+        self.D = {'dino0':['eu', 'ha', 'he', 'me', 'nu'], 'size0':['1','2','3','4','5'],'vegan0':['n','y'],
+                'dino1':['eu', 'ha', 'he', 'me', 'nu'], 'size1':['1','2','3','4','5'],'vegan1':['n','y'],
+                'dino2':['eu', 'ha', 'he', 'me', 'nu'], 'size2':['1','2','3','4','5'],'vegan2':['n','y'],
+                'dino3':['eu', 'ha', 'he', 'me', 'nu'], 'size3':['1','2','3','4','5'],'vegan3':['n','y'],
+                'dino4':['eu', 'ha', 'he', 'me', 'nu'], 'size4':['1','2','3','4','5'],'vegan4':['n','y'],
+                  }
+        self.countries = {'ar': '0', 'ca': '1', 'ch': '2', 'en': '3',
+                          'us': '4'}
+
+
+        self.no = 5
+        self.variables = {}
+        for i in self.D.keys():
+            self.variables[i] = None
+        print(self.variables )
+        self.results = []
+
+        self.total_counter = 0
+        self.ac3()
+
+        self.variables = {}
+        for i in self.D.keys():
+            self.variables[i] = None
+
+        print(self.D)
+        self.permutation_ac()
+
+
 
         unique_solutions = []
         for el in self.results:
@@ -136,10 +410,18 @@ class DinoSolver():
         plt.savefig('labels2.png')
 
 
+
 import time
 def main():
-    time.sleep(2)
+    time.sleep(0.2)
+    print("Solving with Chronological BackTracking")
     solver = DinoSolver()
-    solver.run_full_backtrack()
+    start_time = time.time()
+    # solver.run_full_backtrack()
+    # solver.run_nc_backtrack()
+    solver.run_ac_backtrack()
+    end_time = time.time()
+    print("Time that it took to run everythink: ", end_time-start_time)
+
     solver.print_graph()
 main()
