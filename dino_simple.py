@@ -2,10 +2,14 @@ from copy import deepcopy
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
+from memory_profiler import profile
+from sys import getsizeof
+
 
 class DinoSolver():
     def __init__(self):
-        pass
+        self.iterations = 0
+        self.memory_history = []
 
     def find_unused_var(self):
         for var in self.variables.keys():
@@ -21,8 +25,10 @@ class DinoSolver():
             #     print("EQUAL")
             return
         var = self.find_unused_var()
+        self.iterations += 1
         for d_orig in self.D[var]:
             d = deepcopy(d_orig)
+            self.memory_history.append([d])
             self.variables[var] = d
             if var[:-1] != 'vegan':
                 self.D[var].remove(d_orig)
@@ -52,6 +58,7 @@ class DinoSolver():
 
             self.variables[var] = value
 
+            self.memory_history.append([value])
             order = []
             order_size = []
             order_vegan = []
@@ -66,8 +73,11 @@ class DinoSolver():
         self.variables[var] = None
 
 
+        self.iterations += 1
         for d_orig in self.D[var]:
             d = deepcopy(d_orig)
+
+            self.memory_history.append([d])
             self.variables[var] = d
             if var[:-1] != 'vegan':
                 self.D[var].remove(d_orig)
@@ -90,10 +100,14 @@ class DinoSolver():
             # if str(self.variables2) == str(self.variables):
             #     print("EQUAL")
             return
+
+        self.iterations += 1
         var = self.find_unused_var()
         for d_orig in self.D[var]:
             d = deepcopy(d_orig)
             self.variables[var] = d
+
+            self.memory_history.append([d])
             if var[:-1] != 'vegan':
                 self.D[var].remove(d_orig)
             # print(self.variables)
@@ -107,6 +121,7 @@ class DinoSolver():
                 self.D[var].append(d)
 
     def nu_constraints(self,order = None, order_size = None, order_vegan = None):
+
         if order is None and order_size is None and order_vegan is None:
             order =[]
             order_size = []
@@ -141,6 +156,8 @@ class DinoSolver():
                 order.append(self.variables["dino" + str(i)])
                 order_size.append(self.variables["size" + str(i)])
                 order_vegan.append(self.variables["vegan" + str(i)])
+
+        self.memory_history.append([order, order_size, order_vegan])
 
         self.total_counter += 1
         if not( order_size[ int( self.countries['ch'])] in ['5', None] ):
@@ -202,6 +219,7 @@ class DinoSolver():
                 order.append(self.variables["dino" + str(i)])
                 order_size.append(self.variables["size" + str(i)])
                 order_vegan.append(self.variables["vegan" + str(i)])
+        self.memory_history.append([order, order_size, order_vegan])
 
         self.total_counter += 1
         if not( order_size[ int( self.countries['ch'])] in ['5', None] ):
@@ -389,6 +407,87 @@ class DinoSolver():
                 res.append(list(self.countries.keys())[i] + "-" + el[i])
             print(res)
 
+
+
+
+    def iterative_broadening(self):
+        if None not in self.variables.values():
+            # print(self.variables)
+            self.results.append(deepcopy(self.variables))
+
+            # if str(self.variables2) == str(self.variables):
+            #     print("EQUAL")
+            return
+
+        var = self.find_unused_var()
+        # print(var)
+        domain = self.D[var]
+
+        self.memory_history.append([domain])
+        counted_attempts = 0
+        max_attempts = len(self.D[var])
+
+        self.iterations += 1
+        while counted_attempts < max_attempts and len(domain) > counted_attempts:
+            value = domain[counted_attempts]
+            counted_attempts += 1
+            save = deepcopy(self.variables)
+
+            self.memory_history.append([save])
+            self.memory_history.append([value])
+            self.variables[var] = value
+
+            self.total_counter += 1
+            # print(self.variables)
+            if self.constraints() and self.nu_constraints():
+                # print("True")
+                self.iterative_broadening()
+            else:
+                # print("False")
+                pass
+            # self.D[var].insert(-1,value)
+            self.variables[var] = None
+            #
+            self.variables = save
+
+
+    def run_iterative_broadening(self):
+
+        self.D = {'dino0':['eu', 'ha', 'he', 'me', 'nu'], 'size0':['1','2','3','4','5'],'vegan0':['n','y'],
+                'dino1':['eu', 'ha', 'he', 'me', 'nu'], 'size1':['1','2','3','4','5'],'vegan1':['n','y'],
+                'dino2':['eu', 'ha', 'he', 'me', 'nu'], 'size2':['1','2','3','4','5'],'vegan2':['n','y'],
+                'dino3':['eu', 'ha', 'he', 'me', 'nu'], 'size3':['1','2','3','4','5'],'vegan3':['n','y'],
+                'dino4':['eu', 'ha', 'he', 'me', 'nu'], 'size4':['1','2','3','4','5'],'vegan4':['n','y'],
+                  }
+        var = ['dino','size','vegan']
+        self.countries = {'ar': '0', 'ca': '1', 'ch': '2', 'en': '3',
+                          'us': '4'}
+
+
+        self.no = 5
+        self.variables = {}
+        for i in range(self.no):
+            for v in var:
+                self.variables[v+str(i)] = None
+        self.results = []
+
+        self.total_counter = 0
+        self.iterative_broadening()
+
+        unique_solutions = []
+        for el in self.results:
+            adable = tuple([el['dino0'],el['dino1'],el['dino2'],el['dino3'],el['dino4']])
+            unique_solutions.append(adable)
+        print("We got steps: ", self.total_counter)
+        print("We got solutions: ", len(self.results))
+        print("We got uniques: ", len(set(unique_solutions)))
+        for el in set(unique_solutions):
+            res = []
+            for i in range(len(el)):
+                res.append(list(self.countries.keys())[i] + "-" + el[i])
+            print(res)
+
+
     def print_graph(self):
         G = nx.Graph()
         # Add nodes
@@ -412,16 +511,26 @@ class DinoSolver():
 
 
 import time
+@profile
 def main():
     time.sleep(0.2)
     print("Solving with Chronological BackTracking")
-    solver = DinoSolver()
-    start_time = time.time()
-    # solver.run_full_backtrack()
-    # solver.run_nc_backtrack()
-    solver.run_ac_backtrack()
-    end_time = time.time()
-    print("Time that it took to run everythink: ", end_time-start_time)
+    times = []
+    runtimes = 1
+    for i in range(runtimes):
+        solver = DinoSolver()
+        start_time = time.time()
+        # solver.run_full_backtrack()
+        # solver.run_nc_backtrack()
+        # solver.run_ac_backtrack()
+        solver.run_iterative_broadening()
+        end_time = time.time()
+        print("Time that it took to run everythink: ", end_time-start_time)
+        times.append(end_time - start_time)
+        time.sleep(1)
 
-    solver.print_graph()
+        print("Iterations:",solver.iterations, " | Constraints: ", solver.total_counter)
+        print("We got size consumption for the algorithm of: ", getsizeof(solver.memory_history))
+    print("We got an average runtime of:", sum(times)/runtimes, " with a max of: ",max(times), " and a min of: ",min(times))
+    # solver.print_graph()
 main()

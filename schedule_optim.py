@@ -1,7 +1,10 @@
+from sys import getsizeof
+
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 import time
+from memory_profiler import profile
 
 #
 # def permute(a, l, r):
@@ -15,10 +18,12 @@ import time
 
 class ScheduleSolver():
     def __init__(self):
+        self.memory_history = []
         self.subject_domain_variables = {"ma": "Math", "ch": "Chemistry", "ph": "philosophy", "hi": "History"}  # D-all
         self.time_domain_variables = { "1": "1", "2": "2", "3": "3","4": "4", "5": "5", "6": "6", "7": "7","8": "8",}  # D-all
         self.constraints = {}
         self.total_counter = 0
+        self.iterations = 0
 
 
     def permutation(self, lst,place):
@@ -30,11 +35,12 @@ class ScheduleSolver():
             return [lst]
 
         l = []
-
+        self.iterations += 1
         for i in range(len(lst)):
             m = lst[i]
 
             remLst = lst[:i] + lst[i + 1:]
+            self.memory_history.append((remLst))
 
             for p in self.permutation(remLst,place-1):
                 l.append([m] + p)
@@ -118,10 +124,25 @@ class ScheduleSolver():
 
 
 
-
+@profile
 def main():
-    time.sleep(2)
-    solver = ScheduleSolver()
-    solver.run_simple_backtrack()
+    time.sleep(0.2)
+    times = []
+    runtimes = 1
+    for i in range(runtimes):
+
+        start_time = time.time()
+        solver = ScheduleSolver()
+        solver.run_simple_backtrack()
+
+        end_time = time.time()
+        print("Time that it took to run everythink: ", end_time - start_time)
+        times.append(end_time - start_time)
+        time.sleep(1)
+        print("Iterations:", solver.iterations, " | Constraints: ", solver.total_counter)
+
+        print("We got size consumption for the algorithm of: ", getsizeof(solver.memory_history))
+    print("We got an average runtime of:", sum(times) / runtimes, " with a max of: ", max(times), " and a min of: ",
+          min(times))
 
 main()

@@ -3,6 +3,9 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import time
 
+from memory_profiler import profile
+from sys import getsizeof
+
 #
 # def permute(a, l, r):
 #     if l == r:
@@ -15,12 +18,15 @@ import time
 
 class DinoSolver():
     def __init__(self):
+
+        self.memory_history = []
         self.dino_variables = {"eu": "Eucentrosaurus", "ha": "Hadrosaurus", "he": "Herrerasaurus", "me": "Megasaurus",
                           "nu": "Nuoerosaurus"}  # Z
         self.country_domain_objects = {"ar": "Argentina", "ca": "Canada", "ch": "China", "en": "England",
                                   "us": "USA"}  # D-all
         self.constraints = {}
         self.total_counter = 0
+        self.iterations = 0
 
         self.dinos = ['eu', 'ha', 'he', 'me', 'nu']  # Solution
         print("Dinos:", self.dinos)
@@ -34,11 +40,13 @@ class DinoSolver():
             return [lst]
 
         l = []
-
+        self.iterations += 1
         for i in range(len(lst)):
             m = lst[i]
 
             remLst = lst[:i] + lst[i + 1:]
+
+            self.memory_history.append([remLst])
 
             for p in self.permutation(remLst,place-1):
                 l.append([m] + p)
@@ -82,7 +90,7 @@ class DinoSolver():
                 solutions.append(p)
         print("We got total steps: ", self.total_counter)
         print("We got total choices: ", len(results))
-        print("We got solutions: ", len(solutions))
+        print("We got solutions: ", solutions)
 
 
 
@@ -109,13 +117,27 @@ class DinoSolver():
         nx.draw(G, with_labels=True)
         plt.savefig('labels.png')
 
-
+@profile
 def main():
     time.sleep(2)
     print("Solving with stochastic backtrack")
-    solver = DinoSolver()
-    solver.run_simple_backtrack()
+    times = []
+    runtimes = 1
+    for i in range(runtimes):
+        start_time = time.time()
+        solver = DinoSolver()
+        solver.run_simple_backtrack()
+        end_time = time.time()
+        print("Time that it took to run everythink: ", end_time - start_time)
+        times.append(end_time - start_time)
+        time.sleep(1)
+        print("Iterations:", solver.iterations, " | Constraints: ", solver.total_counter)
 
-    solver.print_graph()
+        print("We got size consumption for the algorithm of: ", getsizeof(solver.memory_history))
+    print("We got an average runtime of:", sum(times) / runtimes, " with a max of: ", max(times), " and a min of: ",
+          min(times))
+
+
+    # solver.print_graph()
 
 main()

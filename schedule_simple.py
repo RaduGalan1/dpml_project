@@ -1,12 +1,16 @@
 from copy import deepcopy
+from sys import getsizeof
+
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
+from memory_profiler import profile
 
 
 class ScheduleSolver():
     def __init__(self):
-        pass
+        self.iterations = 0
+        self.memory_history = []
 
     def find_unused_var(self):
         for var in self.variables.keys():
@@ -22,8 +26,12 @@ class ScheduleSolver():
             #     print("EQUAL")
             return
         var = self.find_unused_var()
+
+        self.iterations += 1
         for d_orig in self.D[var]:
             d = deepcopy(d_orig)
+
+            self.memory_history.append([d])
             self.variables[var] = d
             self.D[var].remove(d_orig)
             if self.constraints() and self.nu_constraints():
@@ -48,6 +56,8 @@ class ScheduleSolver():
 
         for value in self.D[var]:
             self.variables[var] = value
+
+            self.memory_history.append([value])
             order = []
             order_time = []
             for i in range(self.no):
@@ -60,9 +70,12 @@ class ScheduleSolver():
 
         self.variables[var] = None
 
+        self.iterations += 1
         for d_orig in self.D[var]:
             d = deepcopy(d_orig)
             self.variables[var] = d
+
+            self.memory_history.append([d])
             self.D[var].remove(d_orig)
             if self.constraints() and self.nu_constraints():
                 self.permutation_nc()
@@ -106,7 +119,7 @@ class ScheduleSolver():
 
         self.total_counter += 1
 
-
+        self.memory_history.append([order,order_time])
         for i in range(len(order_time)):
             for j in range(len(order_time)):
                 try:
@@ -170,7 +183,7 @@ class ScheduleSolver():
                 order.append(self.variables["subject" + str(i)])
                 order_time.append(self.variables["time" + str(i)])
 
-
+        self.memory_history.append([order,order_time])
         for i in range(len(order_time)):
             for j in range(len(order_time)):
                 try:
@@ -382,12 +395,108 @@ class ScheduleSolver():
         plt.savefig('labels_schedule2.png')
 
 
+    def iterative_broadening(self):
+        if None not in self.variables.values():
+            # print(self.variables)
+            self.results.append(deepcopy(self.variables))
+
+            # if str(self.variables2) == str(self.variables):
+            #     print("EQUAL")
+            return
+
+        var = self.find_unused_var()
+        # print(var)
+        domain = self.D[var]
+
+        self.memory_history.append([domain])
+        counted_attempts = 0
+        max_attempts = len(domain)
+
+        self.iterations += 1
+        while counted_attempts < max_attempts and len(domain) > counted_attempts:
+            value = domain[counted_attempts]
+
+            self.memory_history.append([value])
+            counted_attempts += 1
+            save = deepcopy(self.variables)
+
+            self.memory_history.append([save])
+            self.variables[var] = value
+
+            self.total_counter += 1
+            print(self.variables)
+            if self.constraints() and self.nu_constraints():
+                print("True")
+                self.iterative_broadening()
+            else:
+                print("False")
+
+            # self.D[var].insert(-1,value)
+            self.variables[var] = None
+            #
+            self.variables = save
+
+
+    def run_iterative_broadening(self):
+
+        self.D = {'subject0':['ma', 'ch', 'ph', 'hi'], 'time0':['1','2','3','4','5','6','7','8'],
+                'subject1':['ma', 'ch', 'ph', 'hi'], 'time1':['1','2','3','4','5','6','7','8'],
+                'subject2':['ma', 'ch', 'ph', 'hi'], 'time2':['1','2','3','4','5','6','7','8'],
+                }
+        var = ['subject','time']
+
+
+        self.no = 3
+        self.variables = {}
+        for i in range(self.no):
+            for v in var:
+                self.variables[v + str(i)] = None
+        print(self.variables)
+        self.results = []
+
+        self.total_counter = 0
+        self.iterative_broadening()
+
+        unique_solutions = []
+        for el in self.results:
+            adable = [ [el['subject0'], el['time0']], [el['subject1'], el['time1']], [el['subject2'], el['time2']] ]
+            adable.sort(key= lambda x: x[1], reverse = False)
+
+            if adable not in unique_solutions:
+                unique_solutions.append(adable)
+
+        print("We got steps: ", self.total_counter)
+        print("We got solutions: ", len(self.results))
+        print("We got uniques: ", len(unique_solutions))
+        for el in unique_solutions:
+            print(el)
+
+
 import time
+@profile
 def main():
-    time.sleep(0)
-    solver = ScheduleSolver()
-    # solver.run_full_backtrack()
-    # solver.run_nc_backtrack()
-    solver.run_ac_backtrack()
-    solver.print_graph()
+    time.sleep(0.2)
+    times = []
+    runtimes = 1
+    for i in range(runtimes):
+
+        start_time = time.time()
+        solver = ScheduleSolver()
+        # solver.run_full_backtrack()
+        solver.run_nc_backtrack()
+        # solver.run_ac_backtrack()
+        # solver.run_iterative_broadening()
+
+
+        end_time = time.time()
+        print("Time that it took to run everythink: ", end_time-start_time)
+        times.append(end_time - start_time)
+        time.sleep(1)
+
+        print("Iterations:",solver.iterations, " | Constraints: ", solver.total_counter)
+        print("We got size consumption for the algorithm of: ", getsizeof(solver.memory_history))
+    print("We got an average runtime of:", sum(times) / runtimes, " with a max of: ", max(times), " and a min of: ",
+          min(times))
+
+    # solver.print_graph()
 main()
